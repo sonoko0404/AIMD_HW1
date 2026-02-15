@@ -1,0 +1,20 @@
+{"query_id":"Q001","query":"What AI methods are reported to improve demand forecasting accuracy in supply chains?","type":"direct"}
+{"query_id":"Q002","query":"How does AI adoption affect inventory management outcomes?","type":"direct"}
+{"query_id":"Q003","query":"What evidence links AI to reduced lead times or improved delivery performance?","type":"direct"}
+{"query_id":"Q004","query":"Which AI techniques are used for supplier risk assessment and how do they affect performance?","type":"direct"}
+{"query_id":"Q005","query":"What benefits of AI are reported for logistics routing or transportation efficiency?","type":"direct"}
+{"query_id":"Q006","query":"What limitations or failure modes of AI in supply chain decision-making are documented?","type":"direct"}
+{"query_id":"Q007","query":"How does data quality impact AI-driven supply chain performance?","type":"direct"}
+{"query_id":"Q008","query":"What metrics are used to measure supply chain performance improvements from AI?","type":"direct"}
+{"query_id":"Q009","query":"What organizational or human factors influence AI effectiveness in supply chains?","type":"direct"}
+{"query_id":"Q010","query":"What evidence supports AI improving supply chain resilience or disruption response?","type":"direct"}
+{"query_id":"Q011","query":"Compare findings on AI’s impact on cost reduction vs service level improvement.","type":"synthesis"}
+{"query_id":"Q012","query":"Compare papers that emphasize automation benefits with those highlighting risks or limitations.","type":"synthesis"}
+{"query_id":"Q013","query":"Where do sources agree or disagree on AI’s effect on bullwhip effect mitigation?","type":"synthesis"}
+{"query_id":"Q014","query":"Synthesize evidence on AI in supplier selection versus supplier relationship management.","type":"synthesis"}
+{"query_id":"Q015","query":"Compare impacts of AI in manufacturing planning versus logistics execution.","type":"synthesis"}
+{"query_id":"Q016","query":"Does the corpus provide evidence that AI worsens supply chain performance?","type":"edge"}
+{"query_id":"Q017","query":"Is there evidence that AI reduces sustainability outcomes or increases emissions?","type":"edge"}
+{"query_id":"Q018","query":"Does the corpus contain evidence about AI harms to workforce outcomes in supply chains?","type":"edge"}
+{"query_id":"Q019","query":"Is there evidence that AI works well with small or data-poor firms?","type":"edge"}
+{"query_id":"Q020","query":"Does the corpus include evidence about regulatory or ethical constraints affecting performance?","type":"edge"}
