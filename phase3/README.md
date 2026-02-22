@@ -1,0 +1,78 @@
+# Phase 3 - Personal Research Portal
+
+## Overview
+This Phase 3 deliverable turns the Phase 2 RAG pipeline into a usable portal for research workflows. The UI supports asking questions, searching evidence, viewing citations, saving research threads, generating a research artifact, and exporting outputs.
+
+## Features
+- Ask: generate citation-backed answers with evidence snippets.
+- Search: retrieve top-k evidence passages with source and chunk IDs.
+- Artifacts: generate an evidence table artifact and export as CSV and Markdown.
+- Evaluation: run the query set and summarize citation coverage.
+- History: keep session history and export it to disk.
+- Trust behavior: explicitly reports when evidence is missing and suggests refining the query.
+
+## Quick Start
+1) Install dependencies
+```
+pip install -r requirements.txt
+```
+
+2) Run the portal
+```
+streamlit run src/portal_app.py
+```
+
+## Optional LLM Answers
+If you want LLM-generated answers instead of extractive snippets:
+- Set `OPENAI_API_KEY`
+- Optionally set `OPENAI_MODEL` (default: gpt-4o-mini)
+
+## Example Questions
+- What evidence links AI to improved supply chain performance?
+- Which papers discuss demand forecasting and what metrics do they report?
+- Compare reinforcement learning vs. supervised learning approaches in inventory control.
+- Does the corpus contain evidence about AI’s impact on lead time variability?
+- What are common limitations reported in AI-based supply chain optimization studies?
+
+## Project Structure
+```
+phase3/
+  data/
+    raw/                # PDFs and source artifacts
+    processed/          # extracted text, chunks, FAISS index
+    eval/queries.jsonl  # evaluation queries
+    data_manifest.csv   # source metadata
+  src/
+    portal_app.py       # Phase 3 UI
+    rag/                # retrieval + answer generation
+    ingest/             # ingestion and chunking
+    eval/               # evaluation runner
+  outputs/
+    exports/            # artifact exports (CSV/MD)
+    threads.jsonl       # saved research threads
+    history.jsonl       # exported UI history
+    eval_*_portal.json  # evaluation outputs
+  logs/
+    runs.jsonl          # run logs
+```
+
+## Outputs
+The portal writes files under `outputs/`:
+- `exports/evidence_table_*.csv` and `exports/evidence_table_*.md`
+- `threads.jsonl` for saved threads
+- `history.jsonl` for exported UI history
+- `eval_results_portal.jsonl` and `eval_summary_portal.json`
+
+## Demo Script
+1) Launch the portal: `streamlit run src/portal_app.py`
+2) Ask tab: enter a question like “What evidence links AI to improved supply chain performance?” and click Run answer.
+3) Point out citations in the answer and scroll to the Evidence list to show `(source_id, chunk_id)` pairs.
+4) Click Save thread to disk and show `outputs/threads.jsonl`.
+5) Search tab: run a keyword query and show top-k evidence with citations.
+6) Artifacts tab: generate the evidence table and export CSV/Markdown, then show files under `outputs/exports/`.
+7) Evaluation tab: run evaluation and show `eval_summary_portal.json` plus a few example answers.
+8) History tab: export session history and show `outputs/history.jsonl`.
+
+## Notes
+- The portal reuses the Phase 2 index and processed data under `data/processed/`.
+- Evidence citations follow the format `(source_id, chunk_id)` and map to `data/processed/chunks.jsonl`.
