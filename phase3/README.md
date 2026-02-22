@@ -52,6 +52,10 @@ Restart the Streamlit app after updating the key.
 - Compare reinforcement learning vs. supervised learning approaches in inventory control.
 - Does the corpus contain evidence about AI’s impact on lead time variability?
 - What are common limitations reported in AI-based supply chain optimization studies?
+- Which sources report real-world deployment results vs. simulations?
+- What datasets are used for supply chain demand forecasting in this corpus?
+- Where do papers disagree on AI impact on resilience or risk mitigation?
+- What evidence supports multi-objective optimization in logistics?
 
 ## Project Structure
 ```
@@ -77,7 +81,7 @@ phase3/
 
 ## Outputs
 The portal writes files under `outputs/`:
-- `exports/evidence_table_*.csv` and `exports/evidence_table_*.md`
+- `exports/evidence_table_*.csv`, `exports/evidence_table_*.md`, and `exports/evidence_table_*.pdf`
 - `threads.jsonl` for saved threads
 - `history.jsonl` for exported UI history
 - `eval_results_portal.jsonl` and `eval_summary_portal.json`
@@ -87,8 +91,8 @@ The portal writes files under `outputs/`:
 2) Ask tab: enter a question like “What evidence links AI to improved supply chain performance?” and click Run answer.
 3) Point out citations in the answer and scroll to the Evidence list to show `(source_id, chunk_id)` pairs.
 4) Click Save thread to disk and show `outputs/threads.jsonl`.
-5) Search tab: run a keyword query and show top-k evidence with citations.
-6) Artifacts tab: generate the evidence table and export CSV/Markdown, then show files under `outputs/exports/`.
+5) Search tab: run keyword queries like “demand forecasting”, “inventory optimization”, “reinforcement learning”, “lead time”, “resilience”.
+6) Artifacts tab: generate the evidence table and export CSV/Markdown/PDF, then show files under `outputs/exports/`.
 7) Evaluation tab: run evaluation and show `eval_summary_portal.json` plus a few example answers.
 8) History tab: export session history and show `outputs/history.jsonl`.
 

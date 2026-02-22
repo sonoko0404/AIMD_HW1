@@ -10,6 +10,9 @@ from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv, dotenv_values
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -144,16 +147,51 @@ def rows_to_csv(rows):
     return output.getvalue()
 
 
+def build_pdf_bytes(text):
+    buffer = io.BytesIO()
+    page_width, page_height = letter
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    left = inch
+    right = page_width - inch
+    y = page_height - inch
+    line_height = 14
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        if not line:
+            y -= line_height
+            if y < inch:
+                pdf.showPage()
+                y = page_height - inch
+            continue
+        while line:
+            fit = line
+            while pdf.stringWidth(fit, "Helvetica", 10) > (right - left) and len(fit) > 1:
+                fit = fit[:-1]
+            pdf.setFont("Helvetica", 10)
+            pdf.drawString(left, y, fit)
+            y -= line_height
+            if y < inch:
+                pdf.showPage()
+                y = page_height - inch
+            line = line[len(fit):].lstrip()
+    pdf.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
 def save_artifact(rows, manifest):
     ensure_dirs()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     csv_text = rows_to_csv(rows)
     md_text = rows_to_markdown(rows, manifest)
+    pdf_bytes = build_pdf_bytes(md_text)
     csv_path = ROOT / "outputs" / "exports" / f"evidence_table_{timestamp}.csv"
     md_path = ROOT / "outputs" / "exports" / f"evidence_table_{timestamp}.md"
+    pdf_path = ROOT / "outputs" / "exports" / f"evidence_table_{timestamp}.pdf"
     csv_path.write_text(csv_text, encoding="utf-8")
     md_path.write_text(md_text, encoding="utf-8")
-    return csv_text, md_text, csv_path, md_path
+    pdf_path.write_bytes(pdf_bytes)
+    return csv_text, md_text, pdf_bytes, csv_path, md_path, pdf_path
 
 
 def save_thread(entry):
@@ -303,10 +341,11 @@ with tabs[2]:
         rows = build_evidence_rows(current["query"], current["retrieved_chunks"])
         st.dataframe(rows, use_container_width=True)
         if st.button("Export evidence table"):
-            csv_text, md_text, csv_path, md_path = save_artifact(rows, manifest)
+            csv_text, md_text, pdf_bytes, csv_path, md_path, pdf_path = save_artifact(rows, manifest)
             st.success("Artifact saved.")
             st.download_button("Download CSV", data=csv_text, file_name=csv_path.name, mime="text/csv")
             st.download_button("Download Markdown", data=md_text, file_name=md_path.name, mime="text/markdown")
+            st.download_button("Download PDF", data=pdf_bytes, file_name=pdf_path.name, mime="application/pdf")
 
 with tabs[3]:
     st.subheader("Evaluation")

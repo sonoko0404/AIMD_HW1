@@ -80,7 +80,8 @@ class RAGEngine:
                 prompt = (
                     "You are a research assistant. Use only the provided context. "
                     "Every major claim must include an inline citation as (source_id, chunk_id). "
-                    "If evidence is missing, say so and do not guess.\n\n"
+                    "If evidence is missing, say so, do not guess, and suggest a next retrieval step "
+                    "such as adding specific methods, datasets, metrics, or years.\n\n"
                     f"Question: {query}\n\nContext:\n{context}\n\nAnswer:"
                 )
                 model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
