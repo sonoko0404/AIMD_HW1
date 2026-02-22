@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import os
 import re
 import sys
 import time
@@ -8,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv, dotenv_values
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -15,6 +17,26 @@ from src.rag.engine import RAGEngine, build_log_payload, log_run
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def apply_api_config():
+    env_path = ROOT / ".env"
+    env_values = dotenv_values(env_path) if env_path.exists() else {}
+    load_dotenv(env_path, override=False)
+    key = os.getenv("OPENAI_API_KEY")
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    source = "environment"
+    if "OPENAI_API_KEY" in env_values:
+        source = ".env"
+    if "OPENAI_API_KEY" in st.secrets and st.secrets.get("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = st.secrets.get("OPENAI_API_KEY")
+        key = os.environ["OPENAI_API_KEY"]
+        source = "streamlit_secrets"
+    if "OPENAI_MODEL" in st.secrets and st.secrets.get("OPENAI_MODEL"):
+        os.environ["OPENAI_MODEL"] = st.secrets.get("OPENAI_MODEL")
+        model = os.environ["OPENAI_MODEL"]
+        source = "streamlit_secrets"
+    return key, model, source
 
 
 @st.cache_resource
@@ -184,6 +206,8 @@ def run_eval_portal(engine, use_llm):
 st.set_page_config(page_title="Personal Research Portal", layout="wide")
 st.title("Personal Research Portal")
 
+api_key_value, llm_model_value, api_key_source = apply_api_config()
+
 manifest = load_manifest()
 
 if "history" not in st.session_state:
@@ -196,6 +220,9 @@ with st.sidebar:
     top_k = st.slider("Top-k evidence", min_value=3, max_value=10, value=5, step=1)
     use_llm = st.checkbox("Use LLM for answers", value=True)
     st.caption("LLM requires OPENAI_API_KEY")
+    st.caption(f"OPENAI_API_KEY detected: {bool(api_key_value)}")
+    st.caption(f"LLM model: {llm_model_value}")
+    st.caption(f"API key source: {api_key_source}")
 
 tabs = st.tabs(["Ask", "Search", "Artifacts", "Evaluation", "History"])
 
@@ -206,6 +233,13 @@ with tabs[0]:
         if query.strip():
             engine = get_engine(top_k)
             answer, retrieved = engine.run_query(query, use_llm=use_llm)
+            if use_llm:
+                if engine.last_used_llm:
+                    st.success(f"LLM used: {engine.last_llm_model}")
+                elif engine.last_llm_error:
+                    st.warning(f"LLM not used: {engine.last_llm_error}")
+                else:
+                    st.warning("LLM not used.")
             payload = build_log_payload(query, answer, retrieved, prompt_id="portal_ask_v1")
             log_run(engine.root, payload)
             entry = {

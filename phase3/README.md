@@ -27,6 +27,25 @@ If you want LLM-generated answers instead of extractive snippets:
 - Set `OPENAI_API_KEY`
 - Optionally set `OPENAI_MODEL` (default: gpt-4o-mini)
 
+## Stable API Key Setup
+You can provide the API key in either of these persistent ways:
+
+### Option A: .env in phase3 root
+Create a `.env` file under `phase3/`:
+```
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+### Option B: Streamlit secrets
+Create `.streamlit/secrets.toml` under `phase3/`:
+```
+OPENAI_API_KEY="your_key_here"
+OPENAI_MODEL="gpt-4o-mini"
+```
+
+Restart the Streamlit app after updating the key.
+
 ## Example Questions
 - What evidence links AI to improved supply chain performance?
 - Which papers discuss demand forecasting and what metrics do they report?

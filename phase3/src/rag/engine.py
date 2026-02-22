@@ -14,6 +14,9 @@ class RAGEngine:
         self.root = Path(__file__).resolve().parents[2]
         self.top_k = top_k
         self.model = SentenceTransformer(model_name)
+        self.last_used_llm = False
+        self.last_llm_error = None
+        self.last_llm_model = None
         index_path = self.root / "data" / "processed" / "index.faiss"
         meta_path = self.root / "data" / "processed" / "chunks_meta.jsonl"
         if not index_path.exists():
@@ -62,7 +65,11 @@ class RAGEngine:
         return scored
 
     def generate_answer(self, query, results, use_llm=True):
-        if use_llm and os.getenv("OPENAI_API_KEY"):
+        self.last_used_llm = False
+        self.last_llm_error = None
+        self.last_llm_model = None
+        api_key = os.getenv("OPENAI_API_KEY")
+        if use_llm and api_key:
             try:
                 from openai import OpenAI
                 client = OpenAI()
@@ -82,9 +89,14 @@ class RAGEngine:
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.2,
                 )
+                self.last_used_llm = True
+                self.last_llm_model = model_name
                 return resp.choices[0].message.content.strip()
-            except Exception:
+            except Exception as exc:
+                self.last_llm_error = str(exc)
                 return self.extractive_answer(query, results)
+        if use_llm and not api_key:
+            self.last_llm_error = "OPENAI_API_KEY not set in environment"
         return self.extractive_answer(query, results)
 
     def extractive_answer(self, query, results):
