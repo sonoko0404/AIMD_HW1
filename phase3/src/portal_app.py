@@ -25,16 +25,26 @@ def apply_api_config():
     load_dotenv(env_path, override=False)
     key = os.getenv("OPENAI_API_KEY")
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    source = "environment"
+    source = "environment" if key else "none"
     if "OPENAI_API_KEY" in env_values:
         source = ".env"
-    if "OPENAI_API_KEY" in st.secrets and st.secrets.get("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = st.secrets.get("OPENAI_API_KEY")
-        key = os.environ["OPENAI_API_KEY"]
+    try:
+        secrets = st.secrets
+        secret_key = secrets.get("OPENAI_API_KEY")
+        secret_model = secrets.get("OPENAI_MODEL")
+    except FileNotFoundError:
+        secret_key = None
+        secret_model = None
+    except Exception:
+        secret_key = None
+        secret_model = None
+    if secret_key:
+        os.environ["OPENAI_API_KEY"] = secret_key
+        key = secret_key
         source = "streamlit_secrets"
-    if "OPENAI_MODEL" in st.secrets and st.secrets.get("OPENAI_MODEL"):
-        os.environ["OPENAI_MODEL"] = st.secrets.get("OPENAI_MODEL")
-        model = os.environ["OPENAI_MODEL"]
+    if secret_model:
+        os.environ["OPENAI_MODEL"] = secret_model
+        model = secret_model
         source = "streamlit_secrets"
     return key, model, source
 

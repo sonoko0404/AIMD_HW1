@@ -121,6 +121,7 @@ class RAGEngine:
 
 def log_run(root, payload):
     log_path = Path(root) / "logs" / "runs.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
