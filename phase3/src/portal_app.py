@@ -93,6 +93,70 @@ def extract_first_sentence(text):
     return parts[0] if parts else text.strip()
 
 
+def select_claim_sentence(text, query):
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    query_terms = set(re.findall(r"[a-zA-Z0-9]+", query.lower()))
+    best = ""
+    best_score = -1
+    for sent in sentences:
+        cleaned = sent.strip()
+        if len(cleaned) < 40 or len(cleaned) > 240:
+            continue
+        tokens = re.findall(r"[a-zA-Z0-9]+", cleaned.lower())
+        if len(tokens) < 8:
+            continue
+        score = 0
+        if query_terms:
+            score += 3 * len(query_terms & set(tokens))
+        if any(ch.isdigit() for ch in cleaned):
+            score += 1
+        if any(word in cleaned.lower() for word in ["result", "evidence", "improve", "increase", "decrease", "effect", "impact", "find", "shows", "suggests"]):
+            score += 1
+        if score > best_score:
+            best = cleaned
+            best_score = score
+    if best:
+        return best
+    for sent in sentences:
+        cleaned = sent.strip()
+        if len(cleaned) >= 20:
+            return cleaned
+    return extract_first_sentence(text)
+
+
+def generate_claim_llm(text, query, api_key, model):
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        context = truncate_text(text, 1200)
+        prompt = (
+            "Given the passage, write one sentence claim strictly grounded in the passage. "
+            "Do not add new facts. Use wording from the passage when possible. "
+            "If the passage is mostly metadata or bibliography, return a short topic phrase from the passage.\n\n"
+            f"Question: {query}\n\nPassage:\n{context}\n\nClaim:"
+        )
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+        )
+        claim = resp.choices[0].message.content.strip()
+        if not claim:
+            return None
+        claim = extract_first_sentence(claim)
+        claim_tokens = set(re.findall(r"[a-zA-Z0-9]+", claim.lower()))
+        passage_tokens = set(re.findall(r"[a-zA-Z0-9]+", context.lower()))
+        if claim_tokens and passage_tokens:
+            overlap = len(claim_tokens & passage_tokens) / max(1, len(claim_tokens))
+            if overlap < 0.5:
+                return None
+        return truncate_text(claim, 240)
+    except Exception:
+        return None
+
+
 def truncate_text(text, limit):
     cleaned = text.strip()
     if len(cleaned) <= limit:
@@ -103,11 +167,15 @@ def truncate_text(text, limit):
     return clipped
 
 
-def build_evidence_rows(query, retrieved):
+def build_evidence_rows(query, retrieved, use_llm=False, api_key=None, model="gpt-4o-mini"):
     rows = []
     for item in retrieved:
-        snippet = truncate_text(item.get("text", ""), 280)
-        claim = extract_first_sentence(snippet) or f"Evidence relevant to: {query}"
+        raw_text = item.get("text", "")
+        snippet = truncate_text(raw_text, 280)
+        llm_claim = None
+        if use_llm and api_key:
+            llm_claim = generate_claim_llm(raw_text, query, api_key, model)
+        claim = llm_claim or select_claim_sentence(raw_text, query) or f"Evidence relevant to: {query}"
         citation = f"({item.get('source_id')}, {item.get('chunk_id')})"
         confidence = item.get("rerank_score", item.get("score", 0.0))
         rows.append(
@@ -272,6 +340,8 @@ if "history" not in st.session_state:
     st.session_state["history"] = []
 if "last_result" not in st.session_state:
     st.session_state["last_result"] = None
+if "last_eval_summary" not in st.session_state:
+    st.session_state["last_eval_summary"] = None
 
 with st.sidebar:
     st.header("Settings")
@@ -360,7 +430,13 @@ with tabs[2]:
     if not current:
         st.info("Run a question in Ask to generate an evidence table.")
     else:
-        rows = build_evidence_rows(current["query"], current["retrieved_chunks"])
+        rows = build_evidence_rows(
+            current["query"],
+            current["retrieved_chunks"],
+            use_llm=use_llm,
+            api_key=api_key_value,
+            model=llm_model_value,
+        )
         st.dataframe(rows, use_container_width=True)
         if st.button("Export evidence table"):
             csv_text, md_text, pdf_bytes, csv_path, md_path, pdf_path = save_artifact(rows, manifest)
@@ -376,6 +452,7 @@ with tabs[3]:
         engine = get_engine(top_k)
         summary, results_path, examples = run_eval_portal(engine, use_llm=use_llm)
         if summary:
+            st.session_state["last_eval_summary"] = summary
             st.json(summary)
             st.write("Examples")
             for ex in examples:
@@ -384,7 +461,7 @@ with tabs[3]:
         else:
             st.warning("Evaluation queries not found.")
     summary_path = ROOT / "outputs" / "eval_summary_portal.json"
-    if summary_path.exists():
+    if summary_path.exists() and not st.session_state.get("last_eval_summary"):
         st.caption(f"Latest summary: {summary_path.as_posix()}")
         st.json(json.loads(summary_path.read_text(encoding="utf-8")))
 
