@@ -6,6 +6,8 @@ from pypdf import PdfReader
 
 
 def normalize_text(text):
+    text = text.replace("\u00ad", "")
+    text = re.sub(r"(\w)-\s+(\w)", r"\1\2", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
@@ -29,12 +31,21 @@ def chunk_text(text, chunk_size=1000, overlap=150):
     start = 0
     length = len(text)
     while start < length:
-        end = min(start + chunk_size, length)
-        chunk = text[start:end]
-        chunks.append(chunk)
-        if end == length:
+        raw_end = min(start + chunk_size, length)
+        left = start
+        if start > 0:
+            while left > 0 and not text[left - 1].isspace():
+                left -= 1
+        right = raw_end
+        if raw_end < length:
+            while right < length and not text[right].isspace():
+                right += 1
+        chunk = text[left:right].strip()
+        if chunk:
+            chunks.append(chunk)
+        if raw_end == length:
             break
-        start = end - overlap
+        start = raw_end - overlap
     return chunks
 
 

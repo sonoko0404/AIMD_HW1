@@ -93,10 +93,20 @@ def extract_first_sentence(text):
     return parts[0] if parts else text.strip()
 
 
+def truncate_text(text, limit):
+    cleaned = text.strip()
+    if len(cleaned) <= limit:
+        return cleaned
+    clipped = cleaned[:limit].rstrip()
+    if " " in clipped:
+        clipped = clipped.rsplit(" ", 1)[0].rstrip()
+    return clipped
+
+
 def build_evidence_rows(query, retrieved):
     rows = []
     for item in retrieved:
-        snippet = item.get("text", "")[:280].strip()
+        snippet = truncate_text(item.get("text", ""), 280)
         claim = extract_first_sentence(snippet) or f"Evidence relevant to: {query}"
         citation = f"({item.get('source_id')}, {item.get('chunk_id')})"
         confidence = item.get("rerank_score", item.get("score", 0.0))
@@ -272,6 +282,18 @@ with st.sidebar:
     st.caption(f"LLM model: {llm_model_value}")
     st.caption(f"API key source: {api_key_source}")
 
+    if st.button("Test API Connection"):
+        if not api_key_value:
+            st.error("No API Key provided.")
+        else:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key_value)
+                client.models.list()
+                st.success(f"API Connection Successful! (Key: {api_key_value[:8]}...)")
+            except Exception as e:
+                st.error(f"API Connection Failed: {e}")
+
 tabs = st.tabs(["Ask", "Search", "Artifacts", "Evaluation", "History"])
 
 with tabs[0]:
@@ -306,7 +328,7 @@ with tabs[0]:
         st.write(last["answer"])
         st.markdown("**Evidence**")
         for item in last["retrieved_chunks"]:
-            snippet = item.get("text", "")[:320].strip()
+            snippet = truncate_text(item.get("text", ""), 320)
             source_id = item.get("source_id")
             chunk_id = item.get("chunk_id")
             st.write(f"{snippet} ({source_id}, {chunk_id})")
@@ -324,7 +346,7 @@ with tabs[1]:
             retrieved = engine.retrieve(search_query)
             st.markdown("**Top evidence**")
             for item in retrieved:
-                snippet = item.get("text", "")[:320].strip()
+                snippet = truncate_text(item.get("text", ""), 320)
                 source_id = item.get("source_id")
                 chunk_id = item.get("chunk_id")
                 st.write(f"{snippet} ({source_id}, {chunk_id})")
